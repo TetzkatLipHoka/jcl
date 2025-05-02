@@ -84,7 +84,7 @@ type
     function GetAuthor: string;
     function GetComment: string;
     function GetPage: string;
-    function GetGlyph: THandle;
+    function GetGlyph: {$IFDEF Win64}THandle{$ELSE}Cardinal{$ENDIF};
 
     { IOTARepositoryWizard60 }
     function GetDesigner: string;
@@ -286,7 +286,7 @@ end;
 {$ENDIF COMPILER8_UP}
 
 //IOTARepositoryWizard.GetGlyph
-function TJclOTARepositoryExpert.GetGlyph: THandle;
+function TJclOTARepositoryExpert.GetGlyph: {$IFDEF Win64}THandle{$ELSE}Cardinal{$ENDIF};
 begin
   Result := FGlyph;
 end;
