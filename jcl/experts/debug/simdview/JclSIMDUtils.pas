@@ -865,7 +865,7 @@ function GetThreadJclContext(AThread: IOTAThread; out JclContext: TJclContext): 
 var
   {$IFDEF COMPILER9_UP}
   OTAXMMRegs: TOTAXMMRegs;
-  OTAThreadContext: TOTAThreadContext;
+  OTAThreadContext: {$IFDEF Win64}TOTAContextWin64{$ELSE}TOTAThreadContext{$ENDIF};
   {$ELSE ~COMPILER9_UP}
   ContextMemory: Pointer;
   AlignedContext: PJclContext;
@@ -916,6 +916,24 @@ begin
     Result := AThread.GetOTAXMMRegisters(OTAXMMRegs);
   if Result then
   begin
+    {$IFDEF Win64}
+    // get other registers
+    JclContext.ExtendedContext.SaveArea.MXCSR := OTAXMMRegs.MXCSR;
+    JclContext.ExtendedContext.SaveArea.MXCSRMask := $FFFFFFFF;
+    Move(OTAXMMRegs,JclContext.ExtendedContext.SaveArea.XMMRegisters, SizeOf(TOTAXMMReg) * 8);
+    OTAThreadContext := AThread.OTAThreadContextEx.Win64;
+    JclContext.ExtendedContext.SaveArea.FCW := OTAThreadContext.FltSave.ControlWord;
+    JclContext.ExtendedContext.SaveArea.FSW := OTAThreadContext.FltSave.StatusWord;
+    JclContext.ExtendedContext.SaveArea.FTW := OTAThreadContext.FltSave.TagWord;
+    Move(OTAThreadContext.FltSave.FloatRegisters[0],JclContext.ExtendedContext.SaveArea.FPURegisters[0],SizeOf(Double)); // TODO: Fix this to read 16bytes instead of 8
+    Move(OTAThreadContext.FltSave.FloatRegisters[1],JclContext.ExtendedContext.SaveArea.FPURegisters[1],SizeOf(Double));
+    Move(OTAThreadContext.FltSave.FloatRegisters[2],JclContext.ExtendedContext.SaveArea.FPURegisters[2],SizeOf(Double));
+    Move(OTAThreadContext.FltSave.FloatRegisters[3],JclContext.ExtendedContext.SaveArea.FPURegisters[3],SizeOf(Double));
+    Move(OTAThreadContext.FltSave.FloatRegisters[4],JclContext.ExtendedContext.SaveArea.FPURegisters[4],SizeOf(Double));
+    Move(OTAThreadContext.FltSave.FloatRegisters[5],JclContext.ExtendedContext.SaveArea.FPURegisters[5],SizeOf(Double));
+    Move(OTAThreadContext.FltSave.FloatRegisters[6],JclContext.ExtendedContext.SaveArea.FPURegisters[6],SizeOf(Double));
+    Move(OTAThreadContext.FltSave.FloatRegisters[7],JclContext.ExtendedContext.SaveArea.FPURegisters[7],SizeOf(Double));
+    {$ELSE}    
     // get other registers
     JclContext.ExtendedContext.SaveArea.MXCSR := OTAXMMRegs.MXCSR;
     JclContext.ExtendedContext.SaveArea.MXCSRMask := $FFFFFFFF;
@@ -931,7 +949,8 @@ begin
     Move(OTAThreadContext.FloatSave.RegisterArea[40],JclContext.ExtendedContext.SaveArea.FPURegisters[4],SizeOf(Extended));
     Move(OTAThreadContext.FloatSave.RegisterArea[50],JclContext.ExtendedContext.SaveArea.FPURegisters[5],SizeOf(Extended));
     Move(OTAThreadContext.FloatSave.RegisterArea[60],JclContext.ExtendedContext.SaveArea.FPURegisters[6],SizeOf(Extended));
-    Move(OTAThreadContext.FloatSave.RegisterArea[70],JclContext.ExtendedContext.SaveArea.FPURegisters[7],SizeOf(Extended));
+    Move(OTAThreadContext.FloatSave.RegisterArea[70],JclContext.ExtendedContext.SaveArea.FPURegisters[7],SizeOf(Extended));    
+    {$ENDIF}
   end;
   {$ELSE COMPILER9_UP}
   // get XMM registers
